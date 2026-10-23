@@ -4,17 +4,30 @@ import os
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-FILE_NAME = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                         "contacts.json")
+FILE_NAME = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "contacts.json"
+)
+
+BG = "#F4F6FC"
+WHITE = "#FFFFFF"
+NAVY = "#171C36"
+NAVY_LIGHT = "#252B4B"
+BLUE = "#635BFF"
+BLUE_HOVER = "#5148E5"
+TEXT = "#20243A"
+MUTED = "#7D849D"
+BORDER = "#E8EAF3"
+GREEN = "#159A79"
+RED = "#E05260"
 
 
 class ContactManager:
     def __init__(self, root):
         self.root = root
-        self.root.title("Contact Management System")
-        self.root.geometry("1000x650")
-        self.root.minsize(800, 550)
-        self.root.configure(bg="#F1F5F9")
+        self.root.title("Contactly | Contact Manager")
+        self.root.geometry("1180x760")
+        self.root.minsize(940, 650)
+        self.root.configure(bg=BG)
 
         self.contacts = self.load_contacts()
         self.selected_phone = None
@@ -25,29 +38,9 @@ class ContactManager:
         self.address_var = tk.StringVar()
         self.search_var = tk.StringVar()
 
-        self.setup_style()
+        self.setup_styles()
         self.build_ui()
         self.refresh_table()
-
-    def setup_style(self):
-        style = ttk.Style()
-        style.theme_use("clam")
-        style.configure(
-            "Treeview",
-            background="white",
-            foreground="#1E293B",
-            rowheight=32,
-            fieldbackground="white",
-            font=("Segoe UI", 10)
-        )
-        style.configure(
-            "Treeview.Heading",
-            background="#E2E8F0",
-            foreground="#0F172A",
-            font=("Segoe UI", 10, "bold"),
-            padding=8
-        )
-        style.map("Treeview", background=[("selected", "#BFDBFE")])
 
     def load_contacts(self):
         if not os.path.exists(FILE_NAME):
@@ -59,134 +52,324 @@ class ContactManager:
             return data if isinstance(data, list) else []
         except (json.JSONDecodeError, OSError):
             messagebox.showerror(
-                "File Error",
-                "Could not read contacts.json. Check the file."
+                "File Error", "Unable to read contacts.json."
             )
             return []
 
     def save_contacts(self):
         try:
             with open(FILE_NAME, "w", encoding="utf-8") as file:
-                json.dump(self.contacts, file, indent=4, ensure_ascii=False)
+                json.dump(
+                    self.contacts, file, indent=4, ensure_ascii=False
+                )
             return True
         except OSError as error:
             messagebox.showerror("Save Error", str(error))
             return False
 
+    def setup_styles(self):
+        style = ttk.Style()
+        style.theme_use("clam")
+
+        style.configure(
+            "Modern.Treeview",
+            background=WHITE,
+            foreground=TEXT,
+            fieldbackground=WHITE,
+            rowheight=42,
+            borderwidth=0,
+            font=("Segoe UI", 10)
+        )
+        style.configure(
+            "Modern.Treeview.Heading",
+            background="#F0F2FA",
+            foreground="#565D78",
+            font=("Segoe UI", 9, "bold"),
+            padding=(12, 14),
+            relief="flat"
+        )
+        style.map(
+            "Modern.Treeview",
+            background=[("selected", "#E6E9FF")],
+            foreground=[("selected", TEXT)]
+        )
+        style.configure(
+            "Modern.Vertical.TScrollbar",
+            background="#DDE1EF",
+            troughcolor=WHITE,
+            bordercolor=WHITE,
+            arrowsize=12
+        )
+
+    def make_button(self, parent, text, color, command,
+                    fg=WHITE, padx=16, pady=10):
+        return tk.Button(
+            parent,
+            text=text,
+            command=command,
+            bg=color,
+            fg=fg,
+            activebackground=color,
+            activeforeground=fg,
+            relief="flat",
+            bd=0,
+            font=("Segoe UI", 10, "bold"),
+            padx=padx,
+            pady=pady,
+            cursor="hand2"
+        )
+
+    def card(self, parent, padx=18, pady=16):
+        return tk.Frame(
+            parent,
+            bg=WHITE,
+            padx=padx,
+            pady=pady,
+            highlightbackground=BORDER,
+            highlightthickness=1
+        )
+
     def build_ui(self):
-        header = tk.Frame(self.root, bg="#172554", padx=24, pady=18)
-        header.pack(fill="x")
+        # Sidebar
+        sidebar = tk.Frame(self.root, bg=NAVY, width=230)
+        sidebar.pack(side="left", fill="y")
+        sidebar.pack_propagate(False)
+
+        brand = tk.Frame(sidebar, bg=NAVY)
+        brand.pack(fill="x", padx=22, pady=(28, 36))
 
         tk.Label(
-            header, text="CONTACT MANAGER",
+            brand, text="C",
             font=("Segoe UI", 22, "bold"),
-            bg="#172554", fg="white"
+            bg=BLUE, fg=WHITE, width=2, pady=2
+        ).pack(side="left", padx=(0, 10))
+
+        brand_text = tk.Frame(brand, bg=NAVY)
+        brand_text.pack(side="left")
+
+        tk.Label(
+            brand_text, text="Contactly",
+            font=("Segoe UI", 16, "bold"),
+            bg=NAVY, fg=WHITE
         ).pack(anchor="w")
 
         tk.Label(
-            header, text="Manage your contacts in one place",
-            font=("Segoe UI", 10),
-            bg="#172554", fg="#BFDBFE"
-        ).pack(anchor="w", pady=(4, 0))
-
-        body = tk.Frame(self.root, bg="#F1F5F9", padx=20, pady=16)
-        body.pack(fill="both", expand=True)
-
-        form = tk.LabelFrame(
-            body, text=" Contact Details ",
-            font=("Segoe UI", 11, "bold"),
-            bg="white", fg="#0F172A", padx=14, pady=12
-        )
-        form.pack(fill="x", pady=(0, 14))
-
-        fields = [
-            ("Full Name", self.name_var),
-            ("Phone Number", self.phone_var),
-            ("Email Address", self.email_var),
-            ("Address", self.address_var)
-        ]
-
-        for index, (label, variable) in enumerate(fields):
-            row, col = divmod(index, 2)
-            x = 10 + col * 470
-
-            tk.Label(
-                form, text=label, bg="white",
-                fg="#475569", font=("Segoe UI", 9)
-            ).grid(row=row * 2, column=col, sticky="w",
-                   padx=(x, 15), pady=(4, 2))
-
-            entry = ttk.Entry(form, textvariable=variable, width=42)
-            entry.grid(row=row * 2 + 1, column=col, sticky="ew",
-                       padx=(x, 15), pady=(0, 8), ipady=5)
-
-        form.columnconfigure(0, weight=1)
-        form.columnconfigure(1, weight=1)
-
-        buttons = tk.Frame(form, bg="white")
-        buttons.grid(row=4, column=0, columnspan=2,
-                     sticky="w", padx=10, pady=(4, 0))
-
-        self.make_button(buttons, "Add Contact", "#2563EB",
-                         self.add_contact).pack(side="left", padx=(0, 8))
-        self.make_button(buttons, "Update Selected", "#0F766E",
-                         self.update_contact).pack(side="left", padx=8)
-        self.make_button(buttons, "Delete Selected", "#DC2626",
-                         self.delete_contact).pack(side="left", padx=8)
-        self.make_button(buttons, "Clear Form", "#64748B",
-                         self.clear_form).pack(side="left", padx=8)
-
-        search_frame = tk.Frame(body, bg="#F1F5F9")
-        search_frame.pack(fill="x", pady=(0, 10))
+            brand_text, text="CONTACT MANAGER",
+            font=("Segoe UI", 8, "bold"),
+            bg=NAVY, fg="#929AB9"
+        ).pack(anchor="w", pady=(2, 0))
 
         tk.Label(
-            search_frame, text="Saved Contacts",
-            font=("Segoe UI", 13, "bold"),
-            bg="#F1F5F9", fg="#0F172A"
+            sidebar, text="WORKSPACE",
+            font=("Segoe UI", 9, "bold"),
+            bg=NAVY, fg="#929AB9"
+        ).pack(anchor="w", padx=24, pady=(0, 12))
+
+        nav = tk.Frame(sidebar, bg=NAVY_LIGHT, padx=12, pady=12)
+        nav.pack(fill="x", padx=12)
+
+        tk.Label(
+            nav, text="▦",
+            font=("Segoe UI", 15),
+            bg=NAVY_LIGHT, fg="#AFAAFF"
+        ).pack(side="left", padx=(5, 12))
+
+        tk.Label(
+            nav, text="All Contacts",
+            font=("Segoe UI", 11, "bold"),
+            bg=NAVY_LIGHT, fg=WHITE
         ).pack(side="left")
 
-        ttk.Entry(
-            search_frame, textvariable=self.search_var, width=28
-        ).pack(side="right", padx=(8, 0), ipady=4)
+        tk.Label(
+            sidebar, text="YOUR PERSONAL\nCONTACT SPACE",
+            font=("Segoe UI", 9, "bold"),
+            bg=NAVY, fg="#929AB9",
+            justify="left"
+        ).pack(side="bottom", anchor="w", padx=24, pady=(0, 28))
 
-        tk.Button(
-            search_frame, text="Search",
-            command=self.search_contacts,
-            bg="#2563EB", fg="white",
-            activebackground="#1D4ED8",
-            activeforeground="white", relief="flat",
-            padx=12, pady=5, cursor="hand2"
+        tk.Label(
+            sidebar, text="Python  •  Tkinter",
+            font=("Segoe UI", 9),
+            bg=NAVY, fg="#B8C0D9"
+        ).pack(side="bottom", anchor="w", padx=24, pady=(0, 5))
+
+        # Main area
+        main = tk.Frame(self.root, bg=BG)
+        main.pack(side="left", fill="both", expand=True)
+
+        header = tk.Frame(main, bg=WHITE, padx=30, pady=22)
+        header.pack(fill="x")
+
+        tk.Label(
+            header, text="Good to see you!",
+            font=("Segoe UI", 10),
+            bg=WHITE, fg=MUTED
+        ).pack(anchor="w")
+
+        tk.Label(
+            header, text="Your Contacts",
+            font=("Segoe UI", 25, "bold"),
+            bg=WHITE, fg=TEXT
+        ).pack(anchor="w", pady=(3, 2))
+
+        tk.Label(
+            header,
+            text="Everything you need to manage your connections.",
+            font=("Segoe UI", 10),
+            bg=WHITE, fg=MUTED
+        ).pack(anchor="w")
+
+        content = tk.Frame(main, bg=BG, padx=26, pady=22)
+        content.pack(fill="both", expand=True)
+
+        # Statistics cards
+        stats = tk.Frame(content, bg=BG)
+        stats.pack(fill="x", pady=(0, 18))
+
+        self.total_var = tk.StringVar(value="0")
+        self.email_var_count = tk.StringVar(value="0")
+        self.selection_var = tk.StringVar(value="Ready to manage contacts")
+
+        self.stat_card(
+            stats, "TOTAL CONTACTS", self.total_var,
+            "People saved in your list", BLUE, "01"
+        ).pack(side="left", fill="x", expand=True, padx=(0, 9))
+
+        self.stat_card(
+            stats, "EMAIL ADDRESSES", self.email_var_count,
+            "Contacts with an email", GREEN, "02"
+        ).pack(side="left", fill="x", expand=True, padx=(9, 0))
+
+        # Contact form
+        form = self.card(content, 20, 18)
+        form.pack(fill="x", pady=(0, 18))
+
+        form_header = tk.Frame(form, bg=WHITE)
+        form_header.pack(fill="x", pady=(0, 18))
+
+        tk.Label(
+            form_header, text="Contact Information",
+            font=("Segoe UI", 14, "bold"),
+            bg=WHITE, fg=TEXT
+        ).pack(side="left")
+
+        tk.Label(
+            form_header, text="* Required fields",
+            font=("Segoe UI", 9),
+            bg=WHITE, fg=MUTED
         ).pack(side="right")
 
-        tk.Button(
-            search_frame, text="Show All",
-            command=self.refresh_table,
-            bg="#E2E8F0", fg="#0F172A",
-            relief="flat", padx=10, pady=5, cursor="hand2"
-        ).pack(side="right", padx=6)
+        # Use a separate frame for grid-managed fields.
+        # Tkinter cannot mix pack and grid inside the same parent.
+        fields_frame = tk.Frame(form, bg=WHITE)
+        fields_frame.pack(fill="x")
 
-        table_frame = tk.Frame(body, bg="white")
-        table_frame.pack(fill="both", expand=True)
+        self.add_field(
+            fields_frame, "Full Name *", self.name_var, 0, 0
+        )
+        self.add_field(
+            fields_frame, "Phone Number *", self.phone_var, 0, 1
+        )
+        self.add_field(
+            fields_frame, "Email Address", self.email_var, 2, 0
+        )
+        self.add_field(
+            fields_frame, "Address", self.address_var, 2, 1
+        )
+
+        fields_frame.columnconfigure(0, weight=1, uniform="form")
+        fields_frame.columnconfigure(1, weight=1, uniform="form")
+
+        # Buttons use pack inside their own child frame.
+        actions = tk.Frame(form, bg=WHITE)
+        actions.pack(fill="x", pady=(12, 0))
+
+        self.make_button(
+            actions, "+  Add Contact", BLUE, self.add_contact
+        ).pack(side="left", padx=(0, 8))
+
+        self.make_button(
+            actions, "Update", GREEN, self.update_contact
+        ).pack(side="left", padx=4)
+
+        self.make_button(
+            actions, "Delete", RED, self.delete_contact
+        ).pack(side="left", padx=4)
+
+        self.make_button(
+            actions, "Clear Form", "#EDF0F8", self.clear_form,
+            fg=TEXT
+        ).pack(side="left", padx=4)
+
+        # Contact list
+        list_card = self.card(content, 0, 0)
+        list_card.pack(fill="both", expand=True)
+
+        list_header = tk.Frame(list_card, bg=WHITE, padx=18, pady=16)
+        list_header.pack(fill="x")
+
+        title_area = tk.Frame(list_header, bg=WHITE)
+        title_area.pack(side="left")
+
+        tk.Label(
+            title_area, text="Saved Contacts",
+            font=("Segoe UI", 14, "bold"),
+            bg=WHITE, fg=TEXT
+        ).pack(anchor="w")
+
+        tk.Label(
+            title_area, text="Select a row to edit or delete",
+            font=("Segoe UI", 9),
+            bg=WHITE, fg=MUTED
+        ).pack(anchor="w", pady=(3, 0))
+
+        search_area = tk.Frame(list_header, bg=WHITE)
+        search_area.pack(side="right")
+
+        search_entry = ttk.Entry(
+            search_area, textvariable=self.search_var, width=23
+        )
+        search_entry.pack(side="left", ipady=6, padx=(0, 7))
+        search_entry.bind(
+            "<Return>", lambda _event: self.search_contacts()
+        )
+
+        self.make_button(
+            search_area, "Search", BLUE, self.search_contacts,
+            padx=12, pady=8
+        ).pack(side="left", padx=(0, 5))
+
+        self.make_button(
+            search_area, "All", "#EDF0F8", self.refresh_table,
+            fg=TEXT, padx=12, pady=8
+        ).pack(side="left")
+
+        separator = tk.Frame(list_card, bg=BORDER, height=1)
+        separator.pack(fill="x")
+
+        table_frame = tk.Frame(list_card, bg=WHITE)
+        table_frame.pack(fill="both", expand=True, padx=14, pady=12)
 
         columns = ("name", "phone", "email", "address")
         self.table = ttk.Treeview(
             table_frame, columns=columns,
-            show="headings", selectmode="browse"
+            show="headings", selectmode="browse",
+            style="Modern.Treeview"
         )
 
-        headings = {
-            "name": ("Name", 170),
-            "phone": ("Phone", 125),
-            "email": ("Email", 210),
-            "address": ("Address", 230)
-        }
-
-        for column, (heading, width) in headings.items():
-            self.table.heading(column, text=heading)
-            self.table.column(column, width=width, minwidth=80)
+        for key, label, width in [
+            ("name", "NAME", 155),
+            ("phone", "PHONE", 125),
+            ("email", "EMAIL ADDRESS", 190),
+            ("address", "ADDRESS", 175)
+        ]:
+            self.table.heading(key, text=label)
+            self.table.column(key, width=width, minwidth=70)
 
         scrollbar = ttk.Scrollbar(
-            table_frame, orient="vertical", command=self.table.yview
+            table_frame, orient="vertical",
+            command=self.table.yview,
+            style="Modern.Vertical.TScrollbar"
         )
         self.table.configure(yscrollcommand=scrollbar.set)
         self.table.pack(side="left", fill="both", expand=True)
@@ -194,29 +377,84 @@ class ContactManager:
 
         self.table.bind("<<TreeviewSelect>>", self.select_contact)
 
-        self.status = tk.Label(
-            body, text="", bg="#F1F5F9",
-            fg="#475569", anchor="w", font=("Segoe UI", 9)
-        )
-        self.status.pack(fill="x", pady=(8, 0))
+        footer = tk.Frame(list_card, bg="#F8F9FD", padx=18, pady=11)
+        footer.pack(fill="x")
 
-    def make_button(self, parent, text, color, command):
-        return tk.Button(
-            parent, text=text, command=command,
-            bg=color, fg="white", activebackground=color,
-            activeforeground="white", relief="flat",
+        tk.Label(
+            footer, textvariable=self.selection_var,
+            font=("Segoe UI", 9),
+            bg="#F8F9FD", fg=MUTED
+        ).pack(side="left")
+
+        tk.Label(
+            footer, text="LOCAL JSON STORAGE",
+            font=("Segoe UI", 8, "bold"),
+            bg="#F8F9FD", fg="#8A90A8"
+        ).pack(side="right")
+
+    def stat_card(self, parent, title, variable, subtitle, accent, number):
+        card = self.card(parent, 18, 14)
+
+        top = tk.Frame(card, bg=WHITE)
+        top.pack(fill="x")
+
+        tk.Label(
+            top, text=title,
             font=("Segoe UI", 9, "bold"),
-            padx=12, pady=8, cursor="hand2"
+            bg=WHITE, fg=MUTED
+        ).pack(side="left")
+
+        tk.Label(
+            top, text=number,
+            font=("Segoe UI", 9, "bold"),
+            bg="#F0EFFF", fg=accent,
+            padx=8, pady=4
+        ).pack(side="right")
+
+        tk.Label(
+            card, textvariable=variable,
+            font=("Segoe UI", 26, "bold"),
+            bg=WHITE, fg=TEXT
+        ).pack(anchor="w", pady=(7, 0))
+
+        tk.Label(
+            card, text=subtitle,
+            font=("Segoe UI", 9),
+            bg=WHITE, fg=MUTED
+        ).pack(anchor="w", pady=(2, 0))
+
+        return card
+
+    def add_field(self, parent, label, variable, row, col):
+        field = tk.Frame(parent, bg=WHITE)
+        field.grid(
+            row=row, column=col, sticky="ew",
+            padx=(0, 18 if col == 0 else 0),
+            pady=(0, 10)
         )
+
+        tk.Label(
+            field, text=label,
+            font=("Segoe UI", 9, "bold"),
+            bg=WHITE, fg="#505770"
+        ).pack(anchor="w", pady=(0, 6))
+
+        entry = ttk.Entry(field, textvariable=variable)
+        entry.pack(fill="x", ipady=7)
 
     def clear_form(self):
-        self.name_var.set("")
-        self.phone_var.set("")
-        self.email_var.set("")
-        self.address_var.set("")
+        for variable in (
+            self.name_var, self.phone_var,
+            self.email_var, self.address_var
+        ):
+            variable.set("")
+
         self.selected_phone = None
+
         for item in self.table.selection():
             self.table.selection_remove(item)
+
+        self.selection_var.set("Form cleared")
 
     def refresh_table(self):
         self.search_var.set("")
@@ -234,9 +472,14 @@ class ContactManager:
                 contact.get("address", "")
             ))
 
-        self.status.config(
-            text=f"Total contacts: {len(self.contacts)}"
-                 f"    |    Showing: {len(contacts)}"
+        self.total_var.set(str(len(self.contacts)))
+        self.email_var_count.set(
+            str(sum(bool(c.get("email", "").strip())
+                    for c in self.contacts))
+        )
+
+        self.selection_var.set(
+            f"Showing {len(contacts)} of {len(self.contacts)} contacts"
         )
 
     def search_contacts(self):
@@ -252,7 +495,10 @@ class ContactManager:
             or query in c.get("phone", "").lower()
             or query in c.get("email", "").lower()
         ]
+
         self.populate_table(results)
+        if not results:
+            self.selection_var.set("No matching contacts found")
 
     def validate_form(self):
         name = self.name_var.get().strip()
@@ -260,14 +506,13 @@ class ContactManager:
 
         if not name or not phone:
             messagebox.showwarning(
-                "Missing Details", "Name and phone number are required."
+                "Required Fields", "Name and phone number are required."
             )
             return False
 
         if not phone.isdigit() or not 7 <= len(phone) <= 15:
             messagebox.showwarning(
-                "Invalid Phone",
-                "Phone number must contain 7-15 digits."
+                "Invalid Phone", "Enter a phone number with 7-15 digits."
             )
             return False
 
@@ -293,19 +538,20 @@ class ContactManager:
         }
 
         self.contacts.append(contact)
+
         if self.save_contacts():
             self.refresh_table()
             self.clear_form()
-            messagebox.showinfo("Success", "Contact added successfully!")
+            self.selection_var.set("Contact added successfully")
         else:
             self.contacts.remove(contact)
 
     def select_contact(self, _event=None):
-        selection = self.table.selection()
-        if not selection:
+        selected = self.table.selection()
+        if not selected:
             return
 
-        values = self.table.item(selection[0], "values")
+        values = self.table.item(selected[0], "values")
         if not values:
             return
 
@@ -315,6 +561,7 @@ class ContactManager:
         self.email_var.set(email)
         self.address_var.set(address)
         self.selected_phone = phone
+        self.selection_var.set(f"Selected: {name}")
 
     def update_contact(self):
         if not self.selected_phone:
@@ -347,7 +594,7 @@ class ContactManager:
             messagebox.showerror("Error", "Contact not found.")
             return
 
-        old_contact = contact.copy()
+        old = contact.copy()
         contact.update({
             "name": self.name_var.get().strip(),
             "phone": new_phone,
@@ -358,9 +605,9 @@ class ContactManager:
         if self.save_contacts():
             self.refresh_table()
             self.clear_form()
-            messagebox.showinfo("Success", "Contact updated successfully!")
+            self.selection_var.set("Contact updated successfully")
         else:
-            contact.update(old_contact)
+            contact.update(old)
 
     def delete_contact(self):
         if not self.selected_phone:
@@ -378,11 +625,9 @@ class ContactManager:
             messagebox.showerror("Error", "Contact not found.")
             return
 
-        confirm = messagebox.askyesno(
-            "Confirm Delete",
-            f"Delete contact '{contact['name']}'?"
-        )
-        if not confirm:
+        if not messagebox.askyesno(
+            "Confirm Delete", f"Delete '{contact['name']}'?"
+        ):
             return
 
         self.contacts.remove(contact)
@@ -390,7 +635,7 @@ class ContactManager:
         if self.save_contacts():
             self.refresh_table()
             self.clear_form()
-            messagebox.showinfo("Success", "Contact deleted successfully!")
+            self.selection_var.set("Contact deleted successfully")
         else:
             self.contacts.append(contact)
 
