@@ -25,8 +25,8 @@ class ContactManager:
     def __init__(self, root):
         self.root = root
         self.root.title("Contactly | Contact Manager")
-        self.root.geometry("1180x760")
-        self.root.minsize(940, 650)
+        self.root.geometry("1280x820")
+        self.root.minsize(1000, 760)
         self.root.configure(bg=BG)
 
         self.contacts = self.load_contacts()
@@ -49,7 +49,7 @@ class ContactManager:
         try:
             with open(FILE_NAME, "r", encoding="utf-8") as file:
                 data = json.load(file)
-            return data if isinstance(data, list) else []
+            return [item for item in data if isinstance(item, dict)] if isinstance(data, list) else []
         except (json.JSONDecodeError, OSError):
             messagebox.showerror(
                 "File Error", "Unable to read contacts.json."
@@ -197,7 +197,7 @@ class ContactManager:
         main = tk.Frame(self.root, bg=BG)
         main.pack(side="left", fill="both", expand=True)
 
-        header = tk.Frame(main, bg=WHITE, padx=30, pady=22)
+        header = tk.Frame(main, bg=WHITE, padx=30, pady=14)
         header.pack(fill="x")
 
         tk.Label(
@@ -219,7 +219,7 @@ class ContactManager:
             bg=WHITE, fg=MUTED
         ).pack(anchor="w")
 
-        content = tk.Frame(main, bg=BG, padx=26, pady=22)
+        content = tk.Frame(main, bg=BG, padx=22, pady=14)
         content.pack(fill="both", expand=True)
 
         # Statistics cards
@@ -241,11 +241,11 @@ class ContactManager:
         ).pack(side="left", fill="x", expand=True, padx=(9, 0))
 
         # Contact form
-        form = self.card(content, 20, 18)
+        form = self.card(content, 20, 12)
         form.pack(fill="x", pady=(0, 18))
 
         form_header = tk.Frame(form, bg=WHITE)
-        form_header.pack(fill="x", pady=(0, 18))
+        form_header.pack(fill="x", pady=(0, 10))
 
         tk.Label(
             form_header, text="Contact Information",
@@ -282,7 +282,7 @@ class ContactManager:
 
         # Buttons use pack inside their own child frame.
         actions = tk.Frame(form, bg=WHITE)
-        actions.pack(fill="x", pady=(12, 0))
+        actions.pack(fill="x", pady=(6, 0))
 
         self.make_button(
             actions, "+  Add Contact", BLUE, self.add_contact
@@ -348,12 +348,12 @@ class ContactManager:
         separator.pack(fill="x")
 
         table_frame = tk.Frame(list_card, bg=WHITE)
-        table_frame.pack(fill="both", expand=True, padx=14, pady=12)
+        table_frame.pack(fill="both", expand=True, padx=14, pady=8)
 
         columns = ("name", "phone", "email", "address")
         self.table = ttk.Treeview(
             table_frame, columns=columns,
-            show="headings", selectmode="browse",
+            show="headings", selectmode="browse", height=8,
             style="Modern.Treeview"
         )
 
@@ -474,7 +474,7 @@ class ContactManager:
 
         self.total_var.set(str(len(self.contacts)))
         self.email_var_count.set(
-            str(sum(bool(c.get("email", "").strip())
+            str(sum(bool(str(c.get("email", "")).strip())
                     for c in self.contacts))
         )
 
@@ -491,9 +491,10 @@ class ContactManager:
 
         results = [
             c for c in self.contacts
-            if query in c.get("name", "").lower()
-            or query in c.get("phone", "").lower()
-            or query in c.get("email", "").lower()
+            if query in str(c.get("name", "")).lower()
+            or query in str(c.get("phone", "")).lower()
+            or query in str(c.get("email", "")).lower()
+            or query in str(c.get("address", "")).lower()
         ]
 
         self.populate_table(results)
